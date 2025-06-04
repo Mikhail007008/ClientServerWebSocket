@@ -1,5 +1,10 @@
 package com.example.clientera.ui.theme
 
+/**
+ * Определяет Material Design 3 тему приложения, включая цветовые схемы (светлая/темная)
+ * и типографику. Поддерживает динамические цвета на Android S+.
+ */
+
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -70,7 +75,6 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun ClientEraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Динамические цвета
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {

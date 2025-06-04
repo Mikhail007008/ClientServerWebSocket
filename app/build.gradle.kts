@@ -60,7 +60,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
 
-    // Jetpack Compose BOM (Bill of Materials)
+    // Jetpack Compose BOM
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -71,7 +71,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.androidx.activity.compose)
 
 
@@ -102,7 +101,6 @@ dependencies {
             strictly(libs.versions.kotlinx.serialization.json.get())
         }
     }
-    // Также принудительно установим версию для -core, так как она тоже обновлялась
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${libs.versions.kotlinx.serialization.json.get()}") {
         version {
             strictly(libs.versions.kotlinx.serialization.json.get())
@@ -116,6 +114,7 @@ dependencies {
 
     // Material Design Components
     implementation(libs.material)
+    implementation(libs.androidx.material.icons.extended)
 
 
     // Hilt (Dependency Injection)

@@ -1,5 +1,10 @@
 package com.example.clientera.di
 
+/**
+ * Dagger Hilt модуль для предоставления зависимостей, связанных с сетью.
+ * Предоставляет HttpClient для Ktor и настроенный Json для сериализации.
+ */
+
 import android.util.Log
 import dagger.Module
 import dagger.Provides
@@ -16,6 +21,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
+/** Предоставляет сконфигурированный экземпляр kotlinx.serialization.Json */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -31,6 +37,7 @@ object NetworkModule {
         }
     }
 
+    /** Предоставляет сконфигурированный Ktor HttpClient с поддержкой WebSockets и логированием */
     @Provides
     @Singleton
     fun provideHttpClient(appJson: Json): HttpClient {

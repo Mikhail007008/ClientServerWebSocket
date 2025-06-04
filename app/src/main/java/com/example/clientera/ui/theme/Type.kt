@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.sp
 
 val AppFontFamily = FontFamily.Default
 
+/** Определяет типографику приложения (шрифты, размеры, стили) */
 val Typography = Typography(
     displayLarge = TextStyle(
         fontFamily = AppFontFamily,

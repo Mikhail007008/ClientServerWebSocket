@@ -1,5 +1,10 @@
 package com.example.clientera.ui.login
 
+/**
+ * Экран авторизации пользователя. Позволяет ввести данные для подключения и входа.
+ * Использует [LoginViewModel] для управления состоянием и логикой входа.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons

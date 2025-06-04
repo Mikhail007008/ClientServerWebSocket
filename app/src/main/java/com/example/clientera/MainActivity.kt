@@ -13,9 +13,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.clientera.ui.chat.MainChatScreen
 import com.example.clientera.ui.login.LoginScreen
-import com.example.clientera.ui.theme.ClientEraTheme // Убедитесь, что тема создана
+import com.example.clientera.ui.theme.ClientEraTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/** Определяет константы для маршрутов навигации в приложении */
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
     const val MAIN_CHAT_ROUTE = "main_Chat"
@@ -49,5 +50,4 @@ fun AppNavigation() {
             MainChatScreen(navController = navController)
         }
     }
-
 }

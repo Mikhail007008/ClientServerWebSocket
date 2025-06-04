@@ -1,5 +1,11 @@
 package com.example.clientera.ui.chat
 
+/**
+ * Основной экран чата. Отображает список сообщений и поле для отправки JSON.
+ * Позволяет выйти из системы.
+ * Использует [MainChatViewModel] для управления состоянием и логикой.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -131,6 +137,7 @@ fun MainChatScreen(
     }
 }
 
+/** Отображает элемент сообщения в чате (отправленное или полученное) */
 @OptIn(InternalSerializationApi::class)
 @Composable
 fun ChatMessageDisplayItem(chatMessage: ChatMessage) {
@@ -169,6 +176,7 @@ fun ChatMessageDisplayItem(chatMessage: ChatMessage) {
     }
 }
 
+/** Отображает информационное сообщение от сервера */
 @OptIn(InternalSerializationApi::class)
 @Composable
 fun ServerInfoDisplayItem(serverResponse: ServerResponse) {
@@ -215,7 +223,7 @@ fun ServerInfoDisplayItem(serverResponse: ServerResponse) {
                     "Status: $it",
                     style = MaterialTheme.typography.bodyMedium
                 )
-            } // Показываем status, только если нет type
+            }
             serverResponse.data?.let {
                 Text(
                     "Data: $it",
@@ -246,6 +254,7 @@ fun ServerInfoDisplayItem(serverResponse: ServerResponse) {
     }
 }
 
+/** Отображает системное уведомление в UI чата (например, об ошибке отправки) */
 @Composable
 fun SystemNotificationDisplayItem(notification: UiSystemNotification) {
     Text(

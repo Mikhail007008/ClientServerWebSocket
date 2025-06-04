@@ -1,4 +1,9 @@
 package com.example.clientera.data.remote
+/**
+ * Управляет WebSocket соединением: подключение, отключение, отправка/прием сообщений.
+ * Предоставляет статус соединения и входящие сообщения через Flow.
+ * Используется [AppRepository] для сетевого взаимодействия
+ */
 
 import android.util.Log
 import io.ktor.client.HttpClient
@@ -14,8 +19,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json // Прямой импорт
-import com.example.clientera.data.model.ServerResponse // Ваша модель
+import kotlinx.serialization.json.Json
+import com.example.clientera.data.model.ServerResponse
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.serialization.InternalSerializationApi
 import javax.inject.Inject
@@ -30,6 +35,8 @@ class WebSocketService @Inject constructor(
     private var session: DefaultClientWebSocketSession? = null
     private val _connectionStatus =
         MutableStateFlow<WebSocketConnectionStatus>(WebSocketConnectionStatus.Disconnected())
+
+    /** Текущий статус WebSocket соединения (Disconnected, Connecting, Connected, Error, FailedToConnect) */
     val connectionStatus: StateFlow<WebSocketConnectionStatus> = _connectionStatus.asStateFlow()
 
     @OptIn(InternalSerializationApi::class)
@@ -38,12 +45,16 @@ class WebSocketService @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
+    /** Flow для получения десериализованных сообщений от сервера. Имеет буфер на 1 сообщение*/
     @OptIn(InternalSerializationApi::class)
     val incomingServerResponses: SharedFlow<ServerResponse> =
         _incomingServerResponses.asSharedFlow()
 
+    /** Основная корутина для всех операций сервиса, использует SupervisorJob для изоляции дочерних ошибок */
     private var serviceJob = SupervisorJob()
+    /** Scope для запуска корутин сервиса, работает на Dispatchers.IO */
     private var serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+    /** Корутина, ответственная за прослушивание входящих сообщений от WebSocket */
     private var observationJob: Job? = null
 
     private val isConnectedOrConnecting
@@ -51,11 +62,12 @@ class WebSocketService @Inject constructor(
             _connectionStatus.value is WebSocketConnectionStatus.Connecting ||
                     _connectionStatus.value is WebSocketConnectionStatus.Connected
 
-//    private val isDisconnectedState
-//        get() =
-//            _connectionStatus.value is WebSocketConnectionStatus.Disconnected ||
-//                    _connectionStatus.value == WebSocketConnectionStatus.FailedToConnect
-
+    /**
+     * Инициирует подключение к WebSocket серверу по указанному URL.
+     * Обновляет [connectionStatus] и запускает прослушивание сообщений при успехе.
+     * @param serverUrl URL WebSocket сервера.
+     * @return true, если сессия успешно установлена и активна, false в противном случае.
+     */
     suspend fun connect(serverUrl: String): Boolean {
         if (isConnectedOrConnecting) {
             Log.d(TAG, "WebSocket already connected or connecting to another URL.")
@@ -64,6 +76,7 @@ class WebSocketService @Inject constructor(
 
         _connectionStatus.value = WebSocketConnectionStatus.Connecting
         observationJob?.cancel()
+        /** Основная корутина для всех операций сервиса, использует SupervisorJob для изоляции дочерних ошибок */
         serviceJob.cancelChildren()
         serviceJob = SupervisorJob()
         serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -91,6 +104,10 @@ class WebSocketService @Inject constructor(
         }
     }
 
+    /**
+     * Запускает корутину для чтения и обработки входящих фреймов из WebSocket сессии.
+     * Десериализует текстовые фреймы в [ServerResponse].
+     */
     private fun startObservingIncomingMessages(currentSession: DefaultClientWebSocketSession) {
         Log.d(TAG, "Starting to observe incoming messages for session: $currentSession")
         observationJob = serviceScope.launch {
@@ -111,6 +128,11 @@ class WebSocketService @Inject constructor(
         }
     }
 
+    /**
+     * Обрабатывает входящий фрейм от WebSocket.
+     * Текстовые фреймы парсит как JSON в [ServerResponse] и эмитит в [incomingServerResponses].
+     * Обрабатывает Close фреймы.
+     */
     @OptIn(InternalSerializationApi::class)
     private fun handleIncomingFrame(frame: Frame) {
         when (frame) {
@@ -158,6 +180,12 @@ class WebSocketService @Inject constructor(
         }
     }
 
+    /**
+     * Отправляет сериализуемый объект [data] на сервер в виде JSON.
+     * @param data Объект для отправки.
+     * @param serializer Сериализатор для типа [T].
+     * @return true, если сообщение успешно отправлено, false в противном случае.
+     */
     suspend fun <T : Any> sendSerializable(data: T, serializer: KSerializer<T>): Boolean {
         val currentSession = session
         if (currentSession == null || !currentSession.isActive) {
@@ -183,6 +211,11 @@ class WebSocketService @Inject constructor(
         }
     }
 
+    /**
+     * Отправляет JSON строку на сервер.
+     * @param jsonContent Строка JSON для отправки.
+     * @return true, если сообщение успешно отправлено, false в противном случае.
+     */
     suspend fun sendRawJson(jsonContent: String): Boolean {
         val currentSession = session
 
@@ -236,88 +269,10 @@ class WebSocketService @Inject constructor(
         }
     }
 
-//    @OptIn(InternalSerializationApi::class)
-//    suspend fun sendMessage(message: Message) {
-//        val currentSession = session ?: run {
-//            Log.w(TAG, "Cannot send message, session is null.")
-//            updateStatusIfConnected(WebSocketConnectionStatus.Disconnected("Attempted to send on null session"))
-//            return
-//        }
-//
-//        if (!currentSession.isActive) {
-//            Log.w(TAG, "WebSocket session is not active, cannot send message.")
-//            updateStatusIfConnected(WebSocketConnectionStatus.Disconnected("Tried to send on inactive session"))
-//            return
-//        }
-//
-//        runCatching {
-//            val jsonMessage = Json.encodeToString(message)
-//            currentSession.send(Frame.Text(jsonMessage))
-//            Log.d(TAG, "Message sent: $jsonMessage")
-//        }.onFailure { e ->
-//            Log.e(TAG, "Error sending message: ${e.message}", e)
-//            val newStatus = if (currentSession.isActive) {
-//                WebSocketConnectionStatus.Error("Send failed: ${e.message}")
-//            } else {
-//                WebSocketConnectionStatus.Disconnected("Send failed, session became inactive: ${e.message}")
-//            }
-//            _connectionStatus.value = newStatus
-//        }
-//    }
-
-//    @OptIn(InternalSerializationApi::class)
-//    fun observeIncomingMessages(): Flow<ServerResponse>? {
-//        val currentSession = session
-//        if (currentSession == null || !currentSession.isActive) {
-//            Log.w(TAG, "Cannot observe messages, session is null or not active")
-//            return null
-//        }
-//
-//        return currentSession.incoming
-//            .consumeAsFlow()
-//            .filterIsInstance<Frame.Text>()
-//            .map { frame ->
-//                val jsonText = frame.readText()
-//                runCatching {
-//                    Json.decodeFromString<ServerResponse>(jsonText)
-//                }.getOrElse { e ->
-//                    Log.e(TAG, "Error parsing JSON: ${e.message}", e)
-//                    ServerResponse("error", "Failed to parse server message: ${e.message}")
-//                }
-//            }
-//            .catch { e ->
-//                Log.e(TAG, "Error in public observeIncomingMessages flow: ${e.message}", e)
-//                val newStatus = if (e is ClosedReceiveChannelException) {
-//                    WebSocketConnectionStatus.Disconnected("Channel closed during observation")
-//                } else {
-//                    WebSocketConnectionStatus.Error("Error observing messages: ${e.message}")
-//                }
-//                updateStatusIfConnected(newStatus)
-//            }
-//            .onCompletion { cause ->
-//                Log.d(TAG, "Public observeIncomingMessages flow completed. Cause: $cause")
-//                if (cause == null &&
-//                    _connectionStatus.value == WebSocketConnectionStatus.Connected &&
-//                    (session == null || session?.isActive == false)
-//                ) {
-//                    Log.w(
-//                        TAG,
-//                        "Public flow completed, session inactive, but status was Connected. Updating."
-//                    )
-//                    _connectionStatus.value =
-//                        WebSocketConnectionStatus.Disconnected("Observation flow completed, session inactive")
-//                }
-//            }
-//    }
-
-//    fun isConnected(): Boolean {
-//        val active = session?.isActive == true
-//        if (!active) {
-//            updateStatusIfConnected(WebSocketConnectionStatus.Disconnected("isConnected check found inactive session"))
-//        }
-//        return active
-//    }
-
+    /**
+     * Инициирует закрытие WebSocket соединения и отмену всех активных задач.
+     * Обновляет [connectionStatus] на Disconnected.
+     */
     suspend fun disconnect() {
         Log.d(TAG, "Disconnect called. Current status: ${_connectionStatus.value}")
 
@@ -348,6 +303,9 @@ class WebSocketService @Inject constructor(
     }
 }
 
+/**
+ * Определяет различные состояния WebSocket соединения
+ */
 sealed class WebSocketConnectionStatus {
     data class Disconnected(val reason: String? = null) : WebSocketConnectionStatus()
     object Connecting : WebSocketConnectionStatus()

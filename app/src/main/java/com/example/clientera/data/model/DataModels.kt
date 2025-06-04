@@ -31,8 +31,3 @@ data class ServerResponse(
     val content: String? = null,
     val timestamp: Long? = null
 )
-
-@Serializable
-data class RawJsonMessage(
-    val jsonContent: String
-)

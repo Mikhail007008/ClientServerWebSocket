@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ClientEra"
+rootProject.name = "ClientEraWebSocket"
 include(":app")
  

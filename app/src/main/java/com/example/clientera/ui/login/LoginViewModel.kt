@@ -1,5 +1,11 @@
 package com.example.clientera.ui.login
 
+/**
+ * ViewModel для экрана [LoginScreen].
+ * Управляет данными для входа (адрес, порт, логин, пароль), состоянием процесса входа ([LoginState]),
+ * и инициирует процесс подключения/аутентификации через [AppRepository].
+ */
+
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -15,17 +21,21 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.InternalSerializationApi
 import javax.inject.Inject
 
+/** События, которые [LoginViewModel] может отправить в View для одноразовой обработки */
 sealed class LoginEvent {
+    /** Событие для навигации на главный экран чата после успешного входа */
     object NavigateToMainChat : LoginEvent()
 }
 
+
+/** Состояния процесса авторизации для отображения в UI */
 sealed class LoginState {
-    object Idle : LoginState()
-    object Connecting : LoginState()
-    object Authenticating : LoginState()
-    data class ConnectionFailed(val message: String) : LoginState()
-    data class AuthenticationFailed(val message: String) : LoginState()
-    object AuthenticationSuccess : LoginState()
+    object Idle : LoginState() /** Начальное состояние, без активных операций. */
+    object Connecting : LoginState() /** Идет процесс подключения к серверу. */
+    object Authenticating : LoginState() /** Идет процесс аутентификации на сервере. */
+    data class ConnectionFailed(val message: String) : LoginState() /** Ошибка подключения. */
+    data class AuthenticationFailed(val message: String) : LoginState() /** Ошибка аутентификации. */
+    object AuthenticationSuccess : LoginState() /** Аутентификация прошла успешно. */
 }
 
 @HiltViewModel
@@ -33,20 +43,27 @@ class LoginViewModel @Inject constructor(
     private val appRepository: AppRepository
 ) : ViewModel() {
     val serverAddress = mutableStateOf("192.168.0.35")
-    val serverPort = mutableStateOf("7712")
-    val username = mutableStateOf("1")
-    val password = mutableStateOf("1")
+    val serverPort = mutableStateOf("")
+    val username = mutableStateOf("")
+    val password = mutableStateOf("")
     val passwordVisible = mutableStateOf(false)
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
+    /** Состояние процесса логина, наблюдаемое UI */
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
     private val _loginEvent = MutableSharedFlow<LoginEvent>()
+    /** События для UI (например, навигация) */
     val loginEvent: SharedFlow<LoginEvent> = _loginEvent.asSharedFlow()
 
     private var authJob: Job? = null
     private var connectionStatusJob: Job? = null
 
+    /**
+     * Вызывается при нажатии кнопки "Войти".
+     * Проверяет введенные данные, инициирует подключение и аутентификацию.
+     * Управляет состоянием [loginState] и событиями [loginEvent].
+     */
     @OptIn(InternalSerializationApi::class)
     fun onLoginClicked() {
         authJob?.cancel()
@@ -133,7 +150,6 @@ class LoginViewModel @Inject constructor(
                             Log.d("LoginVM", "Authentication failed: ${serverResponse.answer}")
                             _loginState.value =
                                 LoginState.AuthenticationFailed("Authentication failed: ${serverResponse.answer}")
-//                            appRepository.disconnectFromServer()
                             authJob?.cancel()
                             connectionStatusJob?.cancel()
                         }

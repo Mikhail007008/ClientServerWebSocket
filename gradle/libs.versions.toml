@@ -31,6 +31,7 @@ hiltNavigationCompose = "1.2.0"
 
 # Material
 material = "1.12.0"
+androidxMaterialIconsExtendedVersion = "1.7.8"
 
 # KSP
 ksp = "1.9.20-1.0.14"
@@ -61,6 +62,7 @@ androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "l
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle-runtime-compose" }
 
 # Navigation
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "androidxMaterialIconsExtendedVersion" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
 
 # Ktor

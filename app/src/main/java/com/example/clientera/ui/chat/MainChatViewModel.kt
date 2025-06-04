@@ -1,5 +1,11 @@
 package com.example.clientera.ui.chat
 
+/**
+ * ViewModel для экрана [MainChatScreen].
+ * Управляет списком сообщений чата, вводом JSON, статусом соединения.
+ * Взаимодействует с [AppRepository] для получения сообщений и отправки данных.
+ */
+
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -14,20 +20,23 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.InternalSerializationApi
 import javax.inject.Inject
 
+/** Определяет элементы списка для UI чата: сообщение, инфо от сервера, системное уведомление */
 sealed interface ChatUiListItem
+/** UI-обертка для сообщения чата [ChatMessage] */
 data class UiChatMessage @OptIn(InternalSerializationApi::class) constructor(val message: ChatMessage) :
     ChatUiListItem
 
+/** UI-обертка для ответа сервера [ServerResponse] (не сообщения чата) */
 data class UiServerInfoMessage @OptIn(InternalSerializationApi::class) constructor(val serverResponse: ServerResponse) :
     ChatUiListItem
 
+/** UI-обертка для системных уведомлений */
 data class UiSystemNotification @OptIn(InternalSerializationApi::class) constructor(
     val text: String,
     val isError: Boolean = false
@@ -39,14 +48,16 @@ class MainChatViewModel @Inject constructor(
     private val appRepository: AppRepository
 ) : ViewModel() {
 
+    /** Список элементов для отображения в чате (сообщения, уведомления) */
     val chatMessages: SnapshotStateList<ChatUiListItem> = mutableStateListOf()
+    /** Текущее значение в поле ввода JSON */
     val currentJsonInput = mutableStateOf("")
-
+    /** Текстовое представление статуса соединения для UI */
     val connectionStatus: StateFlow<String> = appRepository.connectionStatus
         .map { status ->
             when (status) {
                 is WebSocketConnectionStatus.Disconnected -> "Disconnected" + (status.reason?.let { " ($it)" }
-                    ?: "") // Добавляем причину, если есть
+                    ?: "")
                 WebSocketConnectionStatus.Connected -> "Connected"
                 WebSocketConnectionStatus.Connecting -> "Connecting..."
                 WebSocketConnectionStatus.FailedToConnect -> "Failed to connect"
@@ -74,29 +85,10 @@ class MainChatViewModel @Inject constructor(
         }
     }
 
-//    fun connect() {
-//        viewModelScope.launch {
-//            messageRepository.connectToServer(serverUrl)
-//        }
-//    }
-
-//    private var observeJob: Job? = null
-
-//    init {
-//        viewModelScope.launch {
-//            messageRepository.connectionStatus.collect { status ->
-//                if (status == WebSocketConnectionStatus.Connected) {
-//                    observeMessages()
-//                } else {
-//                    observeJob?.cancel()
-//                    if (status is WebSocketConnectionStatus.Error || status == WebSocketConnectionStatus.FailedToConnect) {
-//                        messages.add(ServerResponse("system", "Connection lost or failed"))
-//                    }
-//                }
-//            }
-//        }
-//    }
-
+    /**
+     * Подписывается на входящие сообщения от сервера из [AppRepository]
+     * и преобразует их в [ChatUiListItem] для отображения в чате.
+     */
     @OptIn(InternalSerializationApi::class)
     fun observeServerMessages() {
         messageObservationJob?.cancel()
@@ -135,23 +127,6 @@ class MainChatViewModel @Inject constructor(
                 } else {
                     chatMessages.add(UiSystemNotification("Failed to send JSON", isError = true))
                 }
-            }
-        }
-    }
-
-    fun sendChatMessage(text: String) {
-        viewModelScope.launch {
-            val message = ChatMessage(
-                sender = "AndroidClient",
-                content = text,
-                timestamp = System.currentTimeMillis()
-            )
-
-            val success = appRepository.sendChatMessage(message)
-            if (success) {
-                chatMessages.add(UiChatMessage(message))
-            } else {
-                chatMessages.add(UiSystemNotification("Failed to send message", isError = true))
             }
         }
     }
