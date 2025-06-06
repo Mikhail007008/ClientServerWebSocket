@@ -42,7 +42,7 @@ sealed class LoginState {
 class LoginViewModel @Inject constructor(
     private val appRepository: AppRepository
 ) : ViewModel() {
-    val serverAddress = mutableStateOf("192.168.0.35")
+    val serverAddress = mutableStateOf("")
     val serverPort = mutableStateOf("")
     val username = mutableStateOf("")
     val password = mutableStateOf("")
